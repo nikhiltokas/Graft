@@ -18,6 +18,7 @@ import PHP from "tree-sitter-php";
 import { basename } from "node:path";
 import { contentHash } from "../util/id.js";
 import { collectBindings, goReceiverVarOf, resolveRecvType, type FileBindings } from "./bindings.js";
+import { nativeParser } from "./native.js";
 import type { Kind, NodeV1, Relation } from "./types.js";
 
 export type Language = "typescript" | "tsx" | "python" | "go" | "java" | "kotlin" | "swift" | "php" | "r";
@@ -422,10 +423,12 @@ interface DefDescriptor {
  * no such limit as long as each returned chunk is under 32 KB, so we always feed
  * the source in <32 KB slices. Code-unit indexing matches `String.slice`. */
 const PARSE_CHUNK = 16384;
-function parseSource(source: string): Parser.SyntaxNode {
+function parseSource(parser: Parser, source: string): Parser.SyntaxNode {
   return parser.parse((index: number) => source.slice(index, index + PARSE_CHUNK)).rootNode;
 }
 
+/** Throws when `lang`'s native grammar is unavailable: callers check `nativeReady`
+ * (native.ts) first and hand such a file to its breadth-tier stand-in instead. */
 export function extractFile(rel: string, source: string, lang: Language): ExtractResult {
   parser.setLanguage(grammarFor(lang) as never);
   const root = parseSource(source);
